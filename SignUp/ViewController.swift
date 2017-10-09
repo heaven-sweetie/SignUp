@@ -8,54 +8,72 @@
 
 import UIKit
 
+import RxSwift
+import RxCocoa
+
+extension Reactive where Base: UIView {
+    public var backgroundColor: Binder<UIColor?> {
+        return Binder(self.base) { view, backgroundColor in
+            view.backgroundColor = backgroundColor
+        }
+    }
+}
+
 class ViewController: UIViewController {
     @IBOutlet private weak var emailField: UITextField!
     @IBOutlet private weak var passwordField: UITextField!
     @IBOutlet private weak var loginButton: UIButton!
     
+    // MARK: - Rx
+    let disposeBag = DisposeBag()
+    
     // MARK: email field
     func configureEmailField() {
-        emailField.addTarget(self, action: #selector(emailFieldChanged(_:)), for: .editingChanged)
-    }
-    
-    @objc func emailFieldChanged(_ sender: UITextField) {
-        sender.backgroundColor = sender.text?.isValidateToEmail ?? false ? .white : .red
-        
-        updateLoginButtonState()
+        emailField.rx.text
+            .map({ $0?.isValidateToEmail ?? false })    //  filterNil, orEmpty
+            .map({ $0 ? UIColor.white : UIColor.red })
+            .bind(to: emailField.rx.backgroundColor)
+            .disposed(by: disposeBag)
     }
     
     // MARK: password field
     func configurePasswordField() {
-        passwordField.addTarget(self, action: #selector(passwordFieldChanged(_:)), for: .editingChanged)
-    }
-    
-    @objc func passwordFieldChanged(_ sender: UITextField) {
-        sender.backgroundColor = sender.text?.isValidateToPassword ?? false ? .white : .red
-        
-        updateLoginButtonState()
+        passwordField.rx.text
+            .map({ $0?.isValidateToPassword ?? false })
+            .map({ $0 ? UIColor.white : UIColor.red })
+            .bind(to: passwordField.rx.backgroundColor)
+            .disposed(by: disposeBag)
     }
     
     // MARK: - Login Button
-    func updateLoginButtonState() {
-        loginButton.isEnabled = (emailField.text?.isValidateToEmail ?? false) && (passwordField.text?.isValidateToPassword ?? false)
+    func configureLoginButtonState() {
+        Observable.combineLatest(emailField.rx.text, passwordField.rx.text) { email, password -> Bool in
+            return email?.isValidateToEmail ?? false && password?.isValidateToPassword ?? false
+        }
+        .bind(to: loginButton.rx.isEnabled)
+        .disposed(by: disposeBag)
     }
     
     @IBAction func loginButonTouched() {
         
     }
-
+    
     // MARK: - Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
         configureEmailField()
         configurePasswordField()
+        configureLoginButtonState()
     }
-
+    
 }
 
 // MARK: -
 // * KVO와 비교
+
+// MARK: -
+// * 기존의 코드를 기준으로 접근
 
 // MARK: - Data의 Input, Output으로 생각하시오.
 // 1.
@@ -71,3 +89,7 @@ class ViewController: UIViewController {
 // 2.
 // Input: email: String, passworld: String
 // Output: isValid: Bool
+
+
+// MARK: -
+// subscribe(onNext:) vs bind(onNext:)
