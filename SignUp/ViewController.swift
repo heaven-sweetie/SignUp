@@ -56,3 +56,18 @@ class ViewController: UIViewController {
 
 // MARK: -
 // * KVO와 비교
+
+// MARK: - Data의 Input, Output으로 생각하시오.
+// 1.
+// Input: text: String
+// Output: color: UIColor
+
+// Input: text: String
+// Output: isValid: Bool
+//
+// Input: isValid: Bool
+// Output: color: UIColor
+
+// 2.
+// Input: email: String, passworld: String
+// Output: isValid: Bool
